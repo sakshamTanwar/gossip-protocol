@@ -209,6 +209,15 @@ void MP1Node::checkMessages() {
     return;
 }
 
+void MP1Node::sendMessage(Address *destAddress) {
+	size_t msgsize = sizeof(MessageHdr) + sizeof(memberNode->addr.addr) + sizeof(long) + 1;
+	MessageHdr *msg = (MessageHdr *) malloc(msgsize * sizeof(char));
+	msg->msgType = JOINREP;
+	memcpy((char *)(msg+1), &memberNode->addr.addr, sizeof(memberNode->addr.addr));
+	memcpy((char *)(msg+1) + 1 + sizeof(memberNode->addr.addr), &memberNode->heartbeat, sizeof(long));
+	emulNet->ENsend(&memberNode->addr, destAddress, (char *)msg, msgsize);
+}
+
 /**
  * FUNCTION NAME: recvCallBack
  *
@@ -218,6 +227,17 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
 	/*
 	 * Your code goes here
 	 */
+	 MessageHdr *msg = (MessageHdr *)data;
+	 Address *sourceAddr = (Address *)(msg + 1);
+	 /*
+	 	Format for JOINREP {Header Welcome}
+		*/
+
+	 if(msg->msgType == JOINREQ) {
+		 sendMessage(sourceAddr);
+	 } else if(msg->msgType == JOINREP) {
+		 cout<<"Message received at node "<<memberNode->addr.getAddress()<<"\n";
+	 }
 }
 
 /**
@@ -277,5 +297,5 @@ void MP1Node::initMemberListTable(Member *memberNode) {
 void MP1Node::printAddress(Address *addr)
 {
     printf("%d.%d.%d.%d:%d \n",  addr->addr[0],addr->addr[1],addr->addr[2],
-                                                       addr->addr[3], *(short*)&addr->addr[4]) ;    
+                                                       addr->addr[3], *(short*)&addr->addr[4]) ;
 }
